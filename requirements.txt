@@ -1,0 +1,6 @@
+fastapi[standard]==0.141
+uvicorn[standard]==0.52
+numpy<2
+torch==2.2.2
+transformers==4.56.1
+bitarray==3.10
