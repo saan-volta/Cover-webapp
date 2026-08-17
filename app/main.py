@@ -38,7 +38,7 @@ class EncModel(BaseModel):
 #     tokens = steg.llm_sampler.tokenizer.encode(data.message)
 #     ct = steg.decode(tokens, data.context, MAX_NUM_BLOCKS)
 #     return {"result" : ct.decode()}
-# 4
+# 5
 
 
 @app.post("/encode" , response_class=EventSourceResponse)
