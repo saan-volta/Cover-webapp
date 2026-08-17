@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 
-from base64 import b64encode
 from pydantic import BaseModel
 from Cover.lib.steganography import *
 from Cover.lib.mec_math import pad_with_rand
