@@ -54,6 +54,40 @@
     color: var(--muted);
   }
 
+  .description {
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .description h2 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 14px 0 6px;
+  }
+
+  .description h2:first-child { margin-top: 0; }
+
+  .description p,
+  .description ul {
+    margin: 0 0 10px;
+    color: var(--muted);
+  }
+
+  .description ul { padding-left: 18px; }
+  .description li { margin-bottom: 4px; }
+
+  .description code {
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
   main {
     flex: 1;
     display: flex;
@@ -99,6 +133,7 @@
 
   textarea {
     resize: vertical;
+    field-sizing: content;
     min-height: 64px;
     padding: 10px 12px;
     background: #fff;
@@ -115,6 +150,33 @@
     outline-offset: 1px;
     border-color: var(--accent);
   }
+
+  .key-field { width: 120px; }
+
+  .key-box {
+    width: 100%;
+    padding: 9px 12px;
+    background: #fff;
+    border: 1px solid var(--panel-border);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .key-box:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  .key-box[readonly] {
+    background: var(--accent-soft);
+    color: var(--ink);
+    cursor: default;
+  }
+
+  .key-box::placeholder { color: var(--muted); }
 
   button {
     align-self: flex-start;
@@ -142,6 +204,32 @@
     gap: 6px;
     margin-top: auto;
   }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .result-header label { margin-bottom: 0; }
+
+  .copy-btn {
+    padding: 3px 10px;
+    background: transparent;
+    border: 1px solid var(--panel-border);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .copy-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .result-box {
     min-height: 72px;
@@ -202,24 +290,55 @@
   <span id="status">idle</span>
 </header>
 
+<!-- Edit this section with a description of your encoding scheme, usage rules, and examples. -->
+<section class="description">
+  <h2>About</h2>
+  <p> COVER is a demo of a perfect-secrecy steganography algorithm that embeds data in LLM generated text without affecting the distribution of tokens.
+    In addition to preserving the LLM's natural distribution, this method is maximally efficient from the perspective of information theory.
+    This algorithm may be used to transmit data in secret or to mark LLM text with an invisible signature.
+    This implementation uses the tiny <a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M">SmolLM2-135M</a> language model; a larger model will improve the quality of text.
+  </p>
+
+  <h2>Usage & Notes</h2>
+  <ul>
+    <li>Context is the initial seed for the LLM.</li>
+    <li>For this demo, the length of the message is capped at 64 characters. Longer inputs will not be processed. </li>
+    <li>Messages shorter than 64 characters will be padded with random bytes. You may see it when decoding.</li>
+    <li>Use standard english words in the context. Rare text patterns may cause issues with the LLM's tokenizer.</li>
+    <li>For this demo, the key is generated randomly on encoding. Key and context are copied to the decoding panel automatically. </li>
+
+  </ul>
+
+  <h2>Example</h2>
+  <p>Context: <code>The heatwave will be over this week, but the forecasts say the worst is yet to come.</code> &middot; Message: <code>Look for a door marked with a purple lotus, knock twice and call</code></p>
+</section>
+
 <main>
   <section class="panel panel-left">
     <div class="panel-title"><span class="glyph">&#8594;</span> Encode</div>
 
     <div class="field">
       <label for="enc-context">Context</label>
-      <textarea id="enc-context" placeholder="Seed for the generated text"></textarea>
+      <textarea id="enc-context" placeholder="LLM context seed"></textarea>
     </div>
 
     <div class="field">
       <label for="enc-message">Message</label>
-      <textarea id="enc-message" placeholder="Message to hide"></textarea>
+      <textarea id="enc-message" placeholder="Plaintext to encode (64 characters max)"></textarea>
+    </div>
+
+    <div class="field key-field">
+      <label for="enc-key">Key</label>
+      <input id="enc-key" class="key-box" type="text" placeholder="—" readonly>
     </div>
 
     <button id="enc-submit" type="button">Encode</button>
 
     <div class="result-block">
-      <label>Result</label>
+      <div class="result-header">
+        <label>Result</label>
+        <button id="enc-copy" type="button" class="copy-btn">Copy</button>
+      </div>
       <div id="enc-result" class="result-box empty">Output will appear here</div>
     </div>
   </section>
@@ -229,12 +348,17 @@
 
     <div class="field">
       <label for="dec-context">Context</label>
-      <textarea id="dec-context" placeholder="Seed for the generated text (must be same as in encoding)"></textarea>
+      <textarea id="dec-context" placeholder="LLM context seed (must be same as during encoding)"></textarea>
     </div>
 
     <div class="field">
       <label for="dec-message">Message</label>
-      <textarea id="dec-message" placeholder="Encoded text (context not included)"></textarea>
+      <textarea id="dec-message" placeholder="Message to decode (copy encoder's result)"></textarea>
+    </div>
+
+    <div class="field key-field">
+      <label for="dec-key">Key</label>
+      <input id="dec-key" class="key-box" type="text" inputmode="numeric" placeholder="Enter key">
     </div>
 
     <button id="dec-submit" type="button">Decode</button>
@@ -246,7 +370,6 @@
   </section>
 </main>
 
-<!--<footer>POST /encode &middot; POST /decode &mdash; both SSE: token&hellip; then done &mdash; body: {"context": string, "message": string}</footer>-->
 
 <script>
   const statusEl = document.getElementById('status');
@@ -304,8 +427,18 @@
   async function submitDecode() {
     const contextEl = document.getElementById('dec-context');
     const messageEl = document.getElementById('dec-message');
+    const keyEl = document.getElementById('dec-key');
     const button = document.getElementById('dec-submit');
     const resultEl = document.getElementById('dec-result');
+
+    const keyText = keyEl.value.trim();
+    const key = parseInt(keyText, 10);
+    if (!Number.isFinite(key) || String(key) !== keyText) {
+      resultEl.classList.remove('empty', 'streaming');
+      resultEl.classList.add('error');
+      resultEl.textContent = 'Error: Key must be an integer';
+      return;
+    }
 
     button.disabled = true;
     setStatus('running /decode');
@@ -320,7 +453,7 @@
       const res = await fetch('/decode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: contextEl.value, message: messageEl.value })
+        body: JSON.stringify({ context: contextEl.value, message: messageEl.value, key })
       });
 
       if (!res.ok) throw new Error(await readErrorDetail(res));
@@ -371,13 +504,16 @@
     }
   }
 
-  // Encode: /encode now streams "token" events (one word each) followed by a
-  // "done" event over SSE. Native EventSource only supports GET, so the POST
-  // body is sent via fetch and the response stream is parsed by hand,
-  // appending each word to the result box as it arrives.
+  // Encode: /encode now streams a leading "key" event (the randomly
+  // generated integer for this run), then "token" events (one word each),
+  // then "done". Native EventSource only supports GET, so the POST body is
+  // sent via fetch and the response stream is parsed by hand.
   async function submitEncode() {
     const contextEl = document.getElementById('enc-context');
     const messageEl = document.getElementById('enc-message');
+    const keyEl = document.getElementById('enc-key');
+    const decKeyEl = document.getElementById('dec-key');
+    const decContextEl = document.getElementById('dec-context');
     const button = document.getElementById('enc-submit');
     const resultEl = document.getElementById('enc-result');
 
@@ -386,6 +522,7 @@
     resultEl.classList.remove('empty', 'error');
     resultEl.classList.add('streaming');
     resultEl.textContent = '';
+    keyEl.value = '';
 
     let accumulated = '';
     let receivedAny = false;
@@ -421,6 +558,13 @@
             done = true;
             break;
           }
+          if (parsed.event === 'key') {
+            const keyValue = parsed.data.trim();
+            keyEl.value = keyValue;
+            decKeyEl.value = keyValue;
+            decContextEl.value = contextEl.value;
+            continue;
+          }
           if (parsed.event === 'token') {
             accumulated += unwrapToken(parsed.data);
             receivedAny = true;
@@ -447,6 +591,23 @@
 
   document.getElementById('enc-submit').addEventListener('click', submitEncode);
   document.getElementById('dec-submit').addEventListener('click', submitDecode);
+
+  // Copy the encoded result to the clipboard. Ignored while there's no real
+  // output yet (placeholder/empty state).
+  document.getElementById('enc-copy').addEventListener('click', async () => {
+    const resultEl = document.getElementById('enc-result');
+    const copyBtn = document.getElementById('enc-copy');
+    if (resultEl.classList.contains('empty') || !resultEl.textContent) return;
+
+    const original = copyBtn.textContent;
+    try {
+      await navigator.clipboard.writeText(resultEl.textContent);
+      copyBtn.textContent = 'Copied';
+    } catch (_) {
+      copyBtn.textContent = 'Failed';
+    }
+    setTimeout(() => { copyBtn.textContent = original; }, 1200);
+  });
 </script>
 
 </body>
